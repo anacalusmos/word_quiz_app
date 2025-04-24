@@ -1,0 +1,11 @@
+Metacarpal / 손허리뼈의, 중수골의  
+Metacarpophalangeal / 손허리손가락의, 중수수지의  
+Metaphysis / 뼈몸통끝, 골간단  
+Metatarsal / 발허리의, 중족골의  
+Metatarsophalangeal / 발허리발가락의, 중족지절의  
+Myasthenia / 근무력증  
+Myocyte / 근육세포, 근세포  
+Myofibril / 근육원섬유, 근육섬유  
+Myoglobin / 미오글로빈  
+Myopathy / 근육(병)증  
+Myositis / 근육염
