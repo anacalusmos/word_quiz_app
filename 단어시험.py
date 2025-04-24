@@ -61,24 +61,9 @@ def get_word_files():
 
 # 좌우 분할 레이아웃
 left_col, right_col = st.columns([2, 1])
-
 with left_col:
-    st.subheader("📁 단어장 선택 및 입력")
-    selected_file = st.selectbox("단어장을 선택하세요:", get_word_files())
-    if st.button("📥 불러오기"):
-        with open(selected_file, "r", encoding="utf-8") as f:
-            st.session_state.loaded_text = f.read()
-            st.session_state.load_words = True
-    
-    input_text = st.text_area("단어쌍 입력", value=st.session_state.get("loaded_text", ""), height=200)
-
-    if st.button("📤 저장하기"):
-        with open(selected_file, "w", encoding="utf-8") as f:
-            f.write(input_text)
-        st.success(f"'{selected_file}'에 저장 완료!")
-
-    st.subheader("📚 단어장 합치기")
-    selected_files = st.multiselect("합치고 싶은 단어장을 선택하세요:", get_word_files())
+    st.subheader("📚 단어장 선택하기")
+    selected_files = st.multiselect("원하는 단어장을 선택하세요:", get_word_files())
     if st.button("📚 선택한 단어장 합치기"):
         combined_pairs = []
         for file in selected_files:
@@ -89,18 +74,26 @@ with left_col:
         st.session_state.combined = combined_pairs
 
     st.subheader("🆕 새 단어장 만들기")
-    new_filename = st.text_input("새 단어장 이름 (확장자 없이)")
-    new_words = st.text_area("새 단어쌍 입력", height=150)
-    if st.button("💾 새 단어장 저장"):
-        if new_filename.strip():
-            full_filename = new_filename.strip() + ".txt"
-            with open(full_filename, "w", encoding="utf-8") as f:
-                f.write(new_words.strip())
-            st.success(f"'{full_filename}' 파일로 저장되었습니다.")
-            st.rerun()
+    with st.expander("📁 단어장 직접 추가 입력", expanded=False):
+        new_filename = st.text_input("새 단어장 이름 (확장자 없이)")
+        new_words = st.text_area("새 단어쌍 입력", height=150)
+        if st.button("💾 새 단어장 저장"):
+            if new_filename.strip():
+                full_filename = new_filename.strip() + ".txt"
+                with open(full_filename, "w", encoding="utf-8") as f:
+                    f.write(new_words.strip())
+                st.success(f"'{full_filename}' 파일로 저장되었습니다.")
+                st.rerun()
 
 with right_col:
     st.subheader("📝 단어시험 문제 출력")
+
+    quiz_mode = st.radio(
+        "문제 출제 방식 선택:",
+        ["영어 → 뜻 (뜻 빈칸)", "뜻 → 영어 (영어 빈칸)", "랜덤 혼합"],
+        index=2
+    )
+
     combined_pairs = st.session_state.get("combined", [])
     if combined_pairs:
         word_pairs = []
@@ -114,13 +107,19 @@ with right_col:
         random.shuffle(word_pairs)
         output = ""
         for i, (eng, kor) in enumerate(word_pairs, start=1):
-            if random.choice([True, False]):
+            if quiz_mode == "영어 → 뜻 (뜻 빈칸)":
                 q = f"{i}. {eng} : ________"
-            else:
+            elif quiz_mode == "뜻 → 영어 (영어 빈칸)":
                 q = f"{i}. ________ : {kor}"
+            else:
+                if random.choice([True, False]):
+                    q = f"{i}. {eng} : ________"
+                else:
+                    q = f"{i}. ________ : {kor}"
             st.markdown(q)
             output += q + "\n"
 
         st.download_button("📄 누적 문제 다운로드", output, file_name="merged_quiz.txt", mime="text/plain")
     else:
         st.info("📌 왼쪽에서 단어장을 불러오거나 합쳐주세요!")
+
