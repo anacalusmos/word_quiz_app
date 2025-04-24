@@ -1,11 +1,14 @@
 import streamlit as st
 import os
 import random
+from io import BytesIO
 
 # 상태 초기화
 def init_session():
     if "show_guide" not in st.session_state:
-        st.session_state.show_guide = True
+        st.session_state.show_guide = not st.session_state.get("guide_dismissed", False)
+    if "guide_dismissed" not in st.session_state:
+        st.session_state.guide_dismissed = False
 init_session()
 
 # 📘 페이지 타이틀
@@ -47,24 +50,27 @@ give up / 포기하다
 
         col1, col2 = st.columns([8, 2])
         with col1:
-            st.caption("팝업을 닫으면 다시 보이지 않아요. 필요하면 아래 버튼으로 다시 열 수 있어요.")
+            if st.button("👋 다시 보지 않기"):
+                st.session_state.show_guide = False
+                st.session_state.guide_dismissed = True
+                st.rerun()
         with col2:
             if st.button("🔄 다시 보기"):
                 st.session_state.show_guide = True
+                st.session_state.guide_dismissed = False
                 st.rerun()
     st.session_state.show_guide = False
 
 # 📂 단어장 파일 목록
-@st.cache_data
 def get_word_files():
     return [f for f in os.listdir() if f.endswith(".txt")]
 
 # 좌우 분할 레이아웃
-left_col, right_col = st.columns([2, 1])
+left_col, right_col = st.columns([1.6, 1])
 with left_col:
     st.subheader("📚 단어장 선택하기")
     selected_files = st.multiselect("원하는 단어장을 선택하세요:", get_word_files())
-    if st.button("📚 선택한 단어장 합치기"):
+    if st.button("📚 선택한 단어장으로 시험지 만들기"):
         combined_pairs = []
         for file in selected_files:
             with open(file, "r", encoding="utf-8") as f:
@@ -104,7 +110,11 @@ with right_col:
                 kor = parts[1].strip()
                 word_pairs.append((eng, kor))
 
-        random.shuffle(word_pairs)
+        if "shuffled_word_pairs" not in st.session_state:
+            random.shuffle(word_pairs)
+            st.session_state.shuffled_word_pairs = word_pairs.copy()
+        else:
+            word_pairs = st.session_state.shuffled_word_pairs
         output = ""
         for i, (eng, kor) in enumerate(word_pairs, start=1):
             if quiz_mode == "영어 → 뜻 (뜻 빈칸)":
@@ -119,7 +129,25 @@ with right_col:
             st.markdown(q)
             output += q + "\n"
 
-        st.download_button("📄 누적 문제 다운로드", output, file_name="merged_quiz.txt", mime="text/plain")
+        selected_name = selected_files[0].replace(".txt", "") if selected_files else "merged"
+        st.download_button("📄 누적 문제 다운로드 (TXT)", output, file_name=f"{selected_name} test.txt", mime="text/plain")
+        # 답안 생성
+        answer_output = ""
+        for i, (eng, kor) in enumerate(word_pairs, start=1):
+            if quiz_mode == "영어 → 뜻 (뜻 빈칸)":
+                a = f"{i}. {eng} : {kor}"
+            elif quiz_mode == "뜻 → 영어 (영어 빈칸)":
+                a = f"{i}. {eng} : {kor}"
+            else:
+                if output.splitlines()[i-1].endswith(": ________"):
+                    a = f"{i}. {eng} : {kor}"
+                else:
+                    a = f"{i}. {eng} : {kor}"
+            answer_output += a + "\n"
+
+        st.download_button("🟥 정답지 다운로드 (TXT)", answer_output, file_name=f"{selected_name} solution.txt", mime="text/plain")
+        if st.button("📋 시험지 텍스트 복사하기"):
+            st.session_state["copy_text"] = output
+            st.success("📋 텍스트가 복사되었습니다! (Ctrl+V로 붙여넣기 하세요)")
     else:
         st.info("📌 왼쪽에서 단어장을 불러오거나 합쳐주세요!")
-
