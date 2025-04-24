@@ -78,6 +78,7 @@ with left_col:
                 combined_pairs.extend([line.strip() for line in lines if line.strip()])
         combined_pairs = list(dict.fromkeys(combined_pairs))
         st.session_state.combined = combined_pairs
+        st.session_state.shuffled_word_pairs = None  # 새로 셔플되도록 초기화
 
     st.subheader("🆕 새 단어장 만들기")
     with st.expander("📁 단어장 직접 추가 입력", expanded=False):
@@ -94,11 +95,9 @@ with left_col:
 with right_col:
     st.subheader("📝 단어시험 문제 출력")
 
-    quiz_mode = st.radio(
-        "문제 출제 방식 선택:",
-        ["영어 → 뜻 (뜻 빈칸)", "뜻 → 영어 (영어 빈칸)", "랜덤 혼합"],
-        index=2
-    )
+    cols_top = st.columns([2, 1])
+    with cols_top[0]:
+        quiz_mode = st.radio("문제 출제 방식 선택:", ["영어 → 뜻 (뜻 빈칸)", "뜻 → 영어 (영어 빈칸)", "랜덤 혼합"], index=2)
 
     combined_pairs = st.session_state.get("combined", [])
     if combined_pairs:
@@ -110,11 +109,12 @@ with right_col:
                 kor = parts[1].strip()
                 word_pairs.append((eng, kor))
 
-        if "shuffled_word_pairs" not in st.session_state:
+        if "shuffled_word_pairs" not in st.session_state or st.session_state.shuffled_word_pairs is None:
             random.shuffle(word_pairs)
             st.session_state.shuffled_word_pairs = word_pairs.copy()
         else:
             word_pairs = st.session_state.shuffled_word_pairs
+
         output = ""
         for i, (eng, kor) in enumerate(word_pairs, start=1):
             if quiz_mode == "영어 → 뜻 (뜻 빈칸)":
@@ -129,25 +129,22 @@ with right_col:
             st.markdown(q)
             output += q + "\n"
 
-        selected_name = selected_files[0].replace(".txt", "") if selected_files else "merged"
-        st.download_button("📄 누적 문제 다운로드 (TXT)", output, file_name=f"{selected_name} test.txt", mime="text/plain")
-        # 답안 생성
+        st.session_state["output_text"] = output
+
         answer_output = ""
         for i, (eng, kor) in enumerate(word_pairs, start=1):
-            if quiz_mode == "영어 → 뜻 (뜻 빈칸)":
-                a = f"{i}. {eng} : {kor}"
-            elif quiz_mode == "뜻 → 영어 (영어 빈칸)":
-                a = f"{i}. {eng} : {kor}"
-            else:
-                if output.splitlines()[i-1].endswith(": ________"):
-                    a = f"{i}. {eng} : {kor}"
-                else:
-                    a = f"{i}. {eng} : {kor}"
+            a = f"{i}. {eng} : {kor}"
             answer_output += a + "\n"
 
-        st.download_button("🟥 정답지 다운로드 (TXT)", answer_output, file_name=f"{selected_name} solution.txt", mime="text/plain")
-        if st.button("📋 시험지 텍스트 복사하기"):
-            st.session_state["copy_text"] = output
-            st.success("📋 텍스트가 복사되었습니다! (Ctrl+V로 붙여넣기 하세요)")
+        st.session_state["answer_text"] = answer_output
+
+        selected_name = selected_files[0].replace(".txt", "") if selected_files else "merged"
+
+        with cols_top[1]:
+            st.download_button("📄 문제 다운로드", st.session_state["output_text"], file_name=f"{selected_name} test.txt", mime="text/plain")
+            st.download_button("🟥 정답 다운로드", st.session_state["answer_text"], file_name=f"{selected_name} solution.txt", mime="text/plain")
+            if st.button("📋 시험지 복사하기"):
+                st.session_state["copy_text"] = st.session_state["output_text"]
+                st.success("📋 텍스트가 복사되었습니다! (Ctrl+V로 붙여넣기 하세요)")
     else:
         st.info("📌 왼쪽에서 단어장을 불러오거나 합쳐주세요!")
