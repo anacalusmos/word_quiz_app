@@ -3,6 +3,9 @@ import os
 import random
 from io import BytesIO
 
+# 📘 페이지 타이틀
+st.set_page_config(page_title="단어시험 웹앱", layout="wide")
+
 # 상태 초기화
 def init_session():
     if "show_guide" not in st.session_state:
@@ -11,9 +14,29 @@ def init_session():
         st.session_state.guide_dismissed = False
 init_session()
 
-# 📘 페이지 타이틀
-st.set_page_config(page_title="단어시험 웹앱", layout="wide")
 st.title("📘 단어 시험 생성기")
+
+# 사용자 이름 입력
+import streamlit_authenticator as stauth
+
+# 사용자 로그인
+st.sidebar.subheader("🔐 로그인")
+names = ["민재"]
+usernames = ["minjae"]
+passwords = ["abc123"]
+hashed_passwords = stauth.Hasher(passwords).generate()
+authenticator = stauth.Authenticate(names, usernames, hashed_passwords, "wordquiz_cookie", "auth_key", cookie_expiry_days=1)
+
+name, auth_status, username = authenticator.login("로그인", "sidebar")
+
+if auth_status:
+    st.sidebar.success(f"환영합니다, {name}님!")
+    subject = st.sidebar.text_input("단어시험 주제 (예: 동물학, 토익 등)")
+    user = username
+else:
+    st.stop()
+user_folder = "user_data"
+os.makedirs(user_folder, exist_ok=True)
 
 # 안내 팝업
 if st.session_state.show_guide:
@@ -61,38 +84,40 @@ give up / 포기하다
                 st.rerun()
     st.session_state.show_guide = False
 
-# 📂 단어장 파일 목록
-def get_word_files():
-    return [f for f in os.listdir() if f.endswith(".txt")]
+# 📂 사용자별 단어장 파일 목록
+def get_user_files():
+    if not subject:
+        return []
+    return [f for f in os.listdir(user_folder) if f.startswith(f"{subject}_") and f.endswith(".txt")]
+    return [f for f in os.listdir(user_folder) if f.startswith(f"{user}_") and f.endswith(".txt")]
 
 # 좌우 분할 레이아웃
 left_col, right_col = st.columns([1.6, 1])
 with left_col:
-    st.subheader("📚 단어장 선택하기")
-    selected_files = st.multiselect("원하는 단어장을 선택하세요:", get_word_files())
-    if st.button("📚 선택한 단어장으로 시험지 만들기"):
-        combined_pairs = []
-        for file in selected_files:
-            with open(file, "r", encoding="utf-8") as f:
-                lines = f.readlines()
-                combined_pairs.extend([line.strip() for line in lines if line.strip()])
-        combined_pairs = list(dict.fromkeys(combined_pairs))
-        st.session_state.combined = combined_pairs
-        st.session_state.shuffled_word_pairs = None  # 새로 셔플되도록 초기화
-
     st.subheader("🆕 새 단어장 만들기")
     with st.expander("📁 단어장 직접 추가 입력", expanded=False):
-        new_filename = st.text_input("새 단어장 이름 (확장자 없이)")
-        new_words = st.text_area("새 단어쌍 입력", height=150)
+        new_filename = st.text_input("새 단어장 이름 (확장자 없이)", key="filename_1")
+        new_words = st.text_area("새 단어쌍 입력", height=150, key="new_words_area")
         if st.button("💾 새 단어장 저장"):
-            if new_filename.strip():
-                full_filename = new_filename.strip() + ".txt"
-                with open(full_filename, "w", encoding="utf-8") as f:
+            if new_filename.strip() and user:
+                full_filename = f"{subject}_{new_filename.strip()}.txt" if subject else f"{new_filename.strip()}.txt"
+                with open(os.path.join(user_folder, full_filename), "w", encoding="utf-8") as f:
                     f.write(new_words.strip())
                 st.success(f"'{full_filename}' 파일로 저장되었습니다.")
                 st.rerun()
 
-with right_col:
+    st.subheader("📚 단어장 선택하기")
+    selected_files = st.multiselect("원하는 단어장을 선택하세요:", get_user_files())
+    if st.button("📚 선택한 단어장으로 시험지 만들기"):
+        combined_pairs = []
+        for file in selected_files:
+            with open(os.path.join(user_folder, file), "r", encoding="utf-8") as f:
+                lines = f.readlines()
+                combined_pairs.extend([line.strip() for line in lines if line.strip()])
+        combined_pairs = list(dict.fromkeys(combined_pairs))
+        st.session_state.combined = combined_pairs
+        st.session_state.shuffled_word_pairs = None
+
     st.subheader("📝 단어시험 문제 출력")
 
     cols_top = st.columns([2, 1])
@@ -148,3 +173,4 @@ with right_col:
                 st.success("📋 텍스트가 복사되었습니다! (Ctrl+V로 붙여넣기 하세요)")
     else:
         st.info("📌 왼쪽에서 단어장을 불러오거나 합쳐주세요!")
+
