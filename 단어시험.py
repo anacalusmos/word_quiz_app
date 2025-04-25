@@ -173,4 +173,3 @@ with left_col:
                 st.success("📋 텍스트가 복사되었습니다! (Ctrl+V로 붙여넣기 하세요)")
     else:
         st.info("📌 왼쪽에서 단어장을 불러오거나 합쳐주세요!")
-
