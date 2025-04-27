@@ -20,7 +20,7 @@ def login_user():
         cookie_expiry_days=1
     )
 
-    name, auth_status, username = authenticator.login("로그인", "sidebar")
+    name, auth_status, username = authenticator.login("로그인", location="sidebar")
 
     if auth_status is False:
         st.error("❌ 유저명이나 비밀번호가 잘못되었습니다.")
@@ -31,6 +31,7 @@ def login_user():
     else:
         st.sidebar.success(f"✅ 환영합니다, {name}님!")
         return authenticator, username, name
+
 
 def register_user():
     st.subheader("📝 신규 사용자 등록")
