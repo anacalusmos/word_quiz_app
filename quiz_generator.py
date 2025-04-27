@@ -43,13 +43,13 @@ def generate_quiz(selected_files):
     st.download_button(
         label="📄 시험지 다운로드",
         data=quiz_text,
-        file_name="word_quiz_test.txt",
+        file_name=f"{st.session_state.get('subject', 'quiz')}_test.txt",
         mime="text/plain"
     )
 
     st.download_button(
         label="📄 답안지 다운로드",
         data="\n".join(answer_sheet),
-        file_name="word_quiz_solution.txt",
+        file_name=f"{st.session_state.get('subject', 'quiz')}_solution.txt",
         mime="text/plain"
     )
