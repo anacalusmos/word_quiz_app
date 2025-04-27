@@ -1,8 +1,7 @@
 import streamlit as st
 import random
 import io
-import datetime  # 맨 위에 추가!
-
+import datetime
 
 def generate_quiz(selected_files):
     if "combined_words" not in st.session_state:
@@ -40,25 +39,25 @@ def generate_quiz(selected_files):
 
     st.text_area("📋 생성된 시험지", "\n".join(quiz), height=300)
 
-# 다운로드 파일 이름 정하기
-if selected_files and len(selected_files) == 1:
-    base_filename = selected_files[0].replace(".txt", "")
-else:
-    now = datetime.datetime.now()
-    base_filename = now.strftime("%m%d_%H%M")
+    # 다운로드 파일 이름 정하기
+    if selected_files and len(selected_files) == 1:
+        base_filename = selected_files[0].replace(".txt", "")
+    else:
+        now = datetime.datetime.now()
+        base_filename = now.strftime("%m%d_%H%M")
 
     # 다운로드 버튼
     quiz_text = "\n".join(quiz)
-st.download_button(
-    label="📄 시험지 다운로드",
-    data=quiz_text,
-    file_name=f"{base_filename}_test.txt",
-    mime="text/plain"
-)
+    st.download_button(
+        label="📄 시험지 다운로드",
+        data=quiz_text,
+        file_name=f"{base_filename}_test.txt",
+        mime="text/plain"
+    )
 
-st.download_button(
-    label="📄 답안지 다운로드",
-    data="\n".join(answer_sheet),
-    file_name=f"{base_filename}_solution.txt",
-    mime="text/plain"
-)
+    st.download_button(
+        label="📄 답안지 다운로드",
+        data="\n".join(answer_sheet),
+        file_name=f"{base_filename}_solution.txt",
+        mime="text/plain"
+    )
