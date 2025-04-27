@@ -20,7 +20,7 @@ def save_wordlist(subject, filename, words, user_folder):
     with open(os.path.join(folder_path, full_filename), "w", encoding="utf-8") as f:
         f.write(words.strip())
     st.success(f"'{full_filename}' 파일로 저장되었습니다. 새로고침 후 불러올 수 있어요!")
-    st.experimental_rerun()
+    st.rerun()
 
 def load_combined_wordlist(selected_files, subject, user_folder):
     combined_words = []
